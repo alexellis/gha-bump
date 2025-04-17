@@ -88,85 +88,101 @@ func processJobs(workflow map[string]interface{}, client *http.Client, verbose b
 	replace := map[string]string{}
 
 	for jobName, job := range jobs {
-		jobMap, ok := job.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("job %s is not a map", jobName)
+		jobReplacements, err := processJob(jobName, job, client, verbose)
+		if err != nil {
+			return nil, err
 		}
-
-		steps, ok := jobMap["steps"].([]interface{})
-		if !ok {
-			return nil, fmt.Errorf("steps not found or not a list in job %s", jobName)
-		}
-
-		for _, step := range steps {
-			stepMap, ok := step.(map[string]interface{})
-			if !ok {
-				return nil, fmt.Errorf("step is not a map in job %s", jobName)
-			}
-
-			var name string
-			var uses string
-
-			if stepMap["name"] != nil {
-				v, ok := stepMap["name"].(string)
-				if ok {
-					name = v
-				}
-			}
-
-			if stepMap["uses"] != nil {
-				v, ok := stepMap["uses"].(string)
-				if ok {
-					uses = v
-				}
-			}
-
-			st := name
-			if name == "" {
-				st = uses
-			}
-
-			if verbose {
-				if len(uses) > 0 {
-					fmt.Printf("  %s: %s\n", st, uses)
-				} else {
-					fmt.Printf("  %s\n", st)
-				}
-			}
-
-			if len(uses) > 0 {
-				ownerRepo, currentVer, ok := strings.Cut(uses, "@")
-				if ok {
-					if currentVer != "master" {
-						owner, repo, ok := strings.Cut(ownerRepo, "/")
-						if ok {
-							version, err := getLatestVersion(client, owner, repo)
-							if err != nil {
-								return nil, err
-							}
-
-							oldSemver, err := semver.NewVersion(currentVer)
-							if err != nil {
-								return nil, err
-							}
-
-							newSemver, err := semver.NewVersion(version)
-							if err != nil {
-								return nil, err
-							}
-
-							if newSemver.Major() > oldSemver.Major() {
-								shortVer := fmt.Sprintf("v%d", newSemver.Major())
-								replace[uses] = shortVer
-							}
-						}
-					}
-				}
-			}
+		for k, v := range jobReplacements {
+			replace[k] = v
 		}
 	}
 
 	return replace, nil
+}
+
+func processJob(jobName string, job interface{}, client *http.Client, verbose bool) (map[string]string, error) {
+	jobMap, ok := job.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("job %s is not a map", jobName)
+	}
+
+	steps, ok := jobMap["steps"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("steps not found or not a list in job %s", jobName)
+	}
+
+	replacements := map[string]string{}
+
+	for _, step := range steps {
+		stepMap, ok := step.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("step is not a map in job %s", jobName)
+		}
+
+		var name string
+		var uses string
+
+		if stepMap["name"] != nil {
+			if v, ok := stepMap["name"].(string); ok {
+				name = v
+			}
+		}
+		if stepMap["uses"] != nil {
+			if v, ok := stepMap["uses"].(string); ok {
+				uses = v
+			}
+		}
+
+		st := name
+		if name == "" {
+			st = uses
+		}
+
+		if verbose {
+			if len(uses) > 0 {
+				fmt.Printf("  %s: %s\n", st, uses)
+			} else {
+				fmt.Printf("  %s\n", st)
+			}
+		}
+
+		if len(uses) > 0 {
+			if newVer, err := suggestMajorUpgrade(client, uses); err != nil {
+				return nil, err
+			} else if newVer != "" {
+				replacements[uses] = newVer
+			}
+		}
+	}
+
+	return replacements, nil
+}
+
+func suggestMajorUpgrade(client *http.Client, uses string) (string, error) {
+	ownerRepo, currentVer, ok := strings.Cut(uses, "@")
+	if !ok || currentVer == "master" {
+		return "", nil
+	}
+	owner, repo, ok := strings.Cut(ownerRepo, "/")
+	if !ok {
+		return "", nil
+	}
+	version, err := getLatestVersion(client, owner, repo)
+	if err != nil {
+		return "", err
+	}
+	oldSemver, err := semver.NewVersion(currentVer)
+	if err != nil {
+		return "", err
+	}
+	newSemver, err := semver.NewVersion(version)
+	if err != nil {
+		return "", err
+	}
+	if newSemver.Major() > oldSemver.Major() {
+		return fmt.Sprintf("v%d", newSemver.Major()), nil
+	}
+	return "", nil
 }
 
 func applyReplacements(data []byte, replacements map[string]string, target string) error {
