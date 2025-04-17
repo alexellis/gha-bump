@@ -159,6 +159,7 @@ func processJob(jobName string, job interface{}, client *http.Client, verbose bo
 }
 
 func suggestMajorUpgrade(client *http.Client, uses string) (string, error) {
+
 	ownerRepo, currentVer, ok := strings.Cut(uses, "@")
 	if !ok || currentVer == "master" {
 		return "", nil
@@ -167,6 +168,14 @@ func suggestMajorUpgrade(client *http.Client, uses string) (string, error) {
 	if !ok {
 		return "", nil
 	}
+
+	// Only work with versions that start with a v i.e. 4v
+	// When 0.10.0 is given, this may be possible to work with
+	// but requires additional testing.
+	if !strings.HasPrefix(currentVer, "v") {
+		return "", nil
+	}
+
 	version, err := getLatestVersion(client, owner, repo)
 	if err != nil {
 		return "", err
