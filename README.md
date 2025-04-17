@@ -12,7 +12,12 @@ Usage:
 ```bash
 go get github.com/alexellis/gha-bump
 
+# Upgrade and write changes, do it quietly
 gha-bump --write ./.github/workflows/build.yaml
+
+# Print changes, do not write
+gha-bump --verbose --write false \
+  ./.github/workflows/build.yaml
 ```
 
 Before/after:
@@ -25,8 +30,9 @@ Before/after:
 
 Caveats:
 
-* Does not modify the `master` tag if used for an action
-* Does not work with actions which have been pinned with a SHA
+* Does not modify the `master` tag if used for an action - `actions/checkout@master`
+* Does not work with actions which have been pinned with a SHA - `actions/checkout@sha1234567890`
+* Does not work when a version does not have a `v` prefix - `alexellis/upload-assets@0.10.0`
 
 ## License
 
