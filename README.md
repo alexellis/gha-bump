@@ -16,7 +16,7 @@ go get github.com/alexellis/gha-bump
 gha-bump --write .
 
 # Upgrade .github/workflows in an alternative folder
-gha-bump --write ~/go/src/github.com/alexellis/arkade
+gha-bump --write ~/go/src/github.com/alexellis/gha-bump
 gha-bump --write ~/go/src/github.com/alexellis/k3sup
 
 # Upgrade and write changes, do it quietly
@@ -40,6 +40,10 @@ Caveats:
 * Does not modify the `master` tag if used for an action - `actions/checkout@master` - so set it to `v1` and then let it get upgraded
 * Ignores actions which have been pinned with a SHA - `actions/checkout@sha1234567890`
 * Ignores actions without a semver-like `v` prefix - `alexellis/upload-assets@0.10.0`
+
+## Contributing and feature requests
+
+Always create an issue for discussion. PRs sent without a linked issue will be closed, without comment.
 
 ## License
 

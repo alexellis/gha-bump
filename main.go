@@ -13,6 +13,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var (
+	Version   = "dev"
+	GitCommit = "none"
+)
+
 func main() {
 	var write bool
 	var verbose bool
@@ -25,7 +30,10 @@ func main() {
 	if len(flag.Args()) < 1 {
 		fmt.Fprintf(os.Stderr,
 			`gha-bump - upgrade GitHub Actions in workflow files.
-Copyright (c) 2025 Alex Ellis
+
+Copyright (c) 2025 Alex Ellis - Version: %s, GitCommit: %s
+
+https://github.com/sponsors/alexellis
 			
 Options:
 
@@ -40,7 +48,7 @@ Usage:
   # Process a single workflow YAML file
   gha-bump --write=[true|false] --verbose=[true|false] .github/workflows/build.yaml
 
-`)
+`, Version, GitCommit)
 		os.Exit(0)
 	}
 
