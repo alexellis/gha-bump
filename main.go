@@ -16,6 +16,11 @@ import (
 var (
 	Version   = "dev"
 	GitCommit = "none"
+	header    = `gha-bump - Upgrade actions for GitHub Actions workflows.
+Copyright (c) 2025 Alex Ellis - Version: %s, GitCommit: %s
+
+https://github.com/sponsors/alexellis
+`
 )
 
 func main() {
@@ -28,13 +33,8 @@ func main() {
 	flag.Parse()
 
 	if len(flag.Args()) < 1 {
-		fmt.Fprintf(os.Stderr,
-			`gha-bump - upgrade GitHub Actions in workflow files.
-
-Copyright (c) 2025 Alex Ellis - Version: %s, GitCommit: %s
-
-https://github.com/sponsors/alexellis
-			
+		fmt.Fprintln(os.Stderr,
+			fmt.Sprintf(header, Version, GitCommit)+`			
 Options:
 
   --write=[true|false]  Write changes to the file
@@ -47,12 +47,16 @@ Usage:
 
   # Process a single workflow YAML file
   gha-bump --write=[true|false] --verbose=[true|false] .github/workflows/build.yaml
-
-`, Version, GitCommit)
+`)
 		os.Exit(0)
 	}
 
 	target := flag.Args()[0]
+
+	if verbose {
+		fmt.Println(fmt.Sprintf(header, Version, GitCommit))
+	}
+
 	if err := run(write, verbose, target); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		os.Exit(1)
