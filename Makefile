@@ -1,5 +1,5 @@
 Version := $(shell git describe --tags --dirty)
-GitCommit := $(shell git rev-parse HEAD)
+GitCommit := $(shell git rev-parse --short HEAD)
 LDFLAGS := "-s -w -X 'main.Version=$(Version)' -X 'main.GitCommit=$(GitCommit)'"
 PLATFORM := $(shell ./hack/platform-tag.sh)
 SOURCE_DIRS = main.go
@@ -10,7 +10,7 @@ all: gofmt test build dist hash
 
 .PHONY: build
 build:
-	go build -ldflags $(LDFLAGS)
+	go build
 
 .PHONY: gofmt
 gofmt:
