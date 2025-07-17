@@ -12,8 +12,15 @@ Usage:
 ```bash
 go get github.com/alexellis/gha-bump
 
+# Upgrade all workflow files in .github/workflows/
+gha-bump --write .
+
+# Upgrade .github/workflows in an alternative folder
+gha-bump --write ~/go/src/github.com/alexellis/arkade
+gha-bump --write ~/go/src/github.com/alexellis/k3sup
+
 # Upgrade and write changes, do it quietly
-gha-bump --write ./.github/workflows/build.yaml
+gha-bump --verbose=false ./.github/workflows/build.yaml
 
 # Print changes, do not write
 gha-bump --verbose --write false \
@@ -30,9 +37,9 @@ Before/after:
 
 Caveats:
 
-* Does not modify the `master` tag if used for an action - `actions/checkout@master`
-* Does not work with actions which have been pinned with a SHA - `actions/checkout@sha1234567890`
-* Does not work when a version does not have a `v` prefix - `alexellis/upload-assets@0.10.0`
+* Does not modify the `master` tag if used for an action - `actions/checkout@master` - so set it to `v1` and then let it get upgraded
+* Ignores actions which have been pinned with a SHA - `actions/checkout@sha1234567890`
+* Ignores actions without a semver-like `v` prefix - `alexellis/upload-assets@0.10.0`
 
 ## License
 

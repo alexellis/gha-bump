@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -16,14 +17,31 @@ func main() {
 	var write bool
 	var verbose bool
 
-	flag.BoolVar(&write, "write", false, "Write changes to the file")
-	flag.BoolVar(&verbose, "verbose", false, "Enable verbose output")
+	flag.BoolVar(&write, "write", true, "Write changes to the file")
+	flag.BoolVar(&verbose, "verbose", true, "Enable verbose output")
 
 	flag.Parse()
 
 	if len(flag.Args()) < 1 {
-		fmt.Fprintf(os.Stderr, "gha-bump ./workflow.yaml\n")
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr,
+			`gha-bump - upgrade GitHub Actions in workflow files.
+Copyright (c) 2025 Alex Ellis
+			
+Options:
+
+  --write=[true|false]  Write changes to the file
+  --verbose=[true|false]  Enable verbose output
+
+Usage:
+
+  # Process all workflow YAML files in .github/workflows/
+  gha-bump --write=[true|false] --verbose=[true|false] .
+
+  # Process a single workflow YAML file
+  gha-bump --write=[true|false] --verbose=[true|false] .github/workflows/build.yaml
+
+`)
+		os.Exit(0)
 	}
 
 	target := flag.Args()[0]
@@ -34,41 +52,82 @@ func main() {
 }
 
 func run(write, verbose bool, target string) error {
-	if _, err := os.Stat(target); err != nil {
-		return err
-	}
+	var isDir bool
 
-	data, err := os.ReadFile(target)
+	st, err := os.Stat(target)
 	if err != nil {
 		return err
 	}
-
-	workflow, err := loadWorkflow(data)
-	if err != nil {
-		return err
-	}
-
-	clientWithoutRedirects := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
-
-	replacements, err := processJobs(workflow, clientWithoutRedirects, verbose)
-	if err != nil {
-		return err
-	}
-
-	if verbose && len(replacements) > 0 {
-		fmt.Println("Detected following replacements:- ")
-		for old, new := range replacements {
-			fmt.Printf("  %s -> %s\n", old, new)
-		}
-	}
-
-	if write {
-		if err := applyReplacements(data, replacements, target); err != nil {
+	isDir = st.IsDir()
+	if isDir {
+		p := filepath.Join(target, ".github", "workflows")
+		if _, err := os.Stat(p); err != nil {
 			return err
+		}
+		target = p
+	}
+
+	var files []string
+	if isDir {
+
+		files, err = filepath.Glob(filepath.Join(target, "*.yaml"))
+		if err != nil {
+			return err
+		}
+
+		yml, err := filepath.Glob(filepath.Join(target, "*.yml"))
+		if err != nil {
+			return err
+		}
+		files = append(files, yml...)
+	} else {
+		files = []string{target}
+	}
+
+	if isDir && verbose {
+		if len(files) == 0 {
+			return fmt.Errorf("no workflow files found in %s", target)
+		}
+		fmt.Printf("Found %d workflow files in %s\n\n", len(files), target)
+	}
+
+	for _, file := range files {
+		if verbose {
+			fmt.Printf("Processing: %s\n", file)
+		}
+
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return err
+		}
+
+		workflow, err := loadWorkflow(data)
+		if err != nil {
+			return err
+		}
+
+		clientWithoutRedirects := &http.Client{
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}
+
+		replacements, err := processJobs(workflow, clientWithoutRedirects, verbose)
+		if err != nil {
+			return err
+		}
+
+		if verbose && len(replacements) > 0 {
+			fmt.Println("Detected following replacements:- ")
+			for old, new := range replacements {
+				fmt.Printf("  %s -> %s\n", old, new)
+			}
+		}
+
+		if write {
+			if err := applyReplacements(data, replacements, file); err != nil {
+				return err
+			}
 		}
 	}
 
