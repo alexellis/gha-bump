@@ -1,6 +1,6 @@
 Version := $(shell git describe --tags --dirty)
 GitCommit := $(shell git rev-parse HEAD)
-LDFLAGS := "-s -w -X github.com/alexellis/gha-bump/main.Version=$(Version) -X github.com/alexellis/gha-bump/main.GitCommit=$(GitCommit)"
+LDFLAGS := "-s -w -X 'main.Version=$(Version)' -X 'main.GitCommit=$(GitCommit)'"
 PLATFORM := $(shell ./hack/platform-tag.sh)
 SOURCE_DIRS = main.go
 export GO111MODULE=on
@@ -10,7 +10,7 @@ all: gofmt test build dist hash
 
 .PHONY: build
 build:
-	go build
+	go build -ldflags $(LDFLAGS)
 
 .PHONY: gofmt
 gofmt:
