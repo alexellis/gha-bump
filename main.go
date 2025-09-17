@@ -28,7 +28,9 @@ func main() {
 	var verbose bool
 
 	flag.BoolVar(&write, "write", true, "Write changes to the file")
+	flag.BoolVar(&write, "w", true, "Write changes to the file")
 	flag.BoolVar(&verbose, "verbose", true, "Enable verbose output")
+	flag.BoolVar(&verbose, "v", true, "Enable verbose output")
 
 	flag.Parse()
 
@@ -37,16 +39,16 @@ func main() {
 			fmt.Sprintf(header, Version, GitCommit)+`			
 Options:
 
-  --write=[true|false]  Write changes to the file
-  --verbose=[true|false]  Enable verbose output
+  --write (-w)    Write changes to the file (default: true)
+  --verbose (-v)  Enable verbose output (default: true)
 
 Usage:
 
   # Process all workflow YAML files in .github/workflows/
-  gha-bump --write=[true|false] --verbose=[true|false] .
+  gha-bump .
 
   # Process a single workflow YAML file
-  gha-bump --write=[true|false] --verbose=[true|false] .github/workflows/build.yaml
+  gha-bump .github/workflows/build.yaml
 `)
 		os.Exit(0)
 	}
