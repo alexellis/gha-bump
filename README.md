@@ -33,13 +33,20 @@ Before/after:
   - name: Checkout code
 -   uses: actions/checkout@v2
 +   uses: actions/checkout@v4
+  - name: Upload release assets
+-   uses: alexellis/upload-assets@0.4.1
++   uses: alexellis/upload-assets@0.5.0
 ```
+
+Floating major tags (e.g. `checkout@v4`) are only bumped when the major
+version changes, and stay floating. Exact pins (e.g.
+`upload-assets@0.4.1`) are bumped to the full latest release, and tags
+without a `v` prefix are supported.
 
 Caveats:
 
-* Does not modify the `master` tag if used for an action - `actions/checkout@master` - so set it to `v1` and then let it get upgraded
+* Does not modify the `master`/`main` branch tags if used for an action - `actions/checkout@master` - so set it to `v1` and then let it get upgraded
 * Ignores actions which have been pinned with a SHA - `actions/checkout@sha1234567890`
-* Ignores actions without a semver-like `v` prefix - `alexellis/upload-assets@0.10.0`
 
 ## Contributing and feature requests
 
